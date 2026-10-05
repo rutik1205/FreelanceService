@@ -20,11 +20,18 @@ import {
   Lock,
   Shield,
   LogIn,
+  ShieldAlert,
+  Scale,
+  Zap,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
 import ImageKitUpload from './ImageKitUpload';
 import ProjectChat from './ProjectChat';
+import PaymentProtectionModal from './PaymentProtectionModal';
+import DisputeModal from './DisputeModal';
+import MilestonesSection from './MilestonesSection';
+import CodeQualityReportCard from './CodeQualityReportCard';
 
 export default function ProjectDetail({
   projectId,
@@ -43,6 +50,15 @@ export default function ProjectDetail({
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Payment Protection Modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [targetPaymentMilestone, setTargetPaymentMilestone] = useState(null);
+  const [targetPaymentAmount, setTargetPaymentAmount] = useState(0);
+
+  // Dispute Modal state
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [activeDisputeData, setActiveDisputeData] = useState(null);
+
   // Bid form state
   const [bidAmount, setBidAmount] = useState('');
   const [deliveryDays, setDeliveryDays] = useState('7');
@@ -57,7 +73,7 @@ export default function ProjectDetail({
 
   // Approval review state
   const [rating, setRating] = useState(5);
-  const [feedback, setFeedback] = useState('Great work on the GitHub deliverable! Clean code and well documented.');
+  const [feedback, setFeedback] = useState('');
   const [showApproveModal, setShowApproveModal] = useState(false);
 
   // Load project details and bids
@@ -96,6 +112,19 @@ export default function ProjectDetail({
         console.error('Bid load error:', bidErr);
       }
       setBids(loadedBids);
+
+      // Load active dispute if any
+      try {
+        const dRes = await fetch(apiUrl(`/api/disputes/project/${projectId}`), { headers: authHeaders });
+        const dData = await dRes.json();
+        if (dData.success && dData.hasDispute) {
+          setActiveDisputeData(dData.dispute);
+        } else {
+          setActiveDisputeData(null);
+        }
+      } catch (dErr) {
+        // non-blocking
+      }
     } catch (err) {
       console.error(err);
       setError(err.message || 'Error loading project');
@@ -502,6 +531,133 @@ export default function ProjectDetail({
           {/* TAB 1: OVERVIEW & DELIVERABLES */}
           {activeTab === 'overview' && (
             <>
+              {/* ESCROW PROTECTION VAULT CARD */}
+              <div
+                style={{
+                  background: project.hasDispute
+                    ? '#fef2f2'
+                    : project.escrowStatus === 'funded'
+                    ? '#f0fdf4'
+                    : project.escrowStatus === 'released'
+                    ? '#f8fafc'
+                    : '#f0f7ff',
+                  border: `1px solid ${
+                    project.hasDispute
+                      ? '#fecaca'
+                      : project.escrowStatus === 'funded'
+                      ? '#bbf7d0'
+                      : project.escrowStatus === 'released'
+                      ? '#cbd5e1'
+                      : '#bfdbfe'
+                  }`,
+                  borderRadius: '16px',
+                  padding: '1.25rem 1.5rem',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '1rem',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                  <div
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '12px',
+                      background: project.hasDispute ? '#fee2e2' : '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    {project.hasDispute ? (
+                      <ShieldAlert size={24} color="#dc2626" />
+                    ) : (
+                      <Lock size={24} color={project.escrowStatus === 'funded' ? '#16a34a' : '#2563eb'} />
+                    )}
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                        SkillDesk Payment Protection
+                      </h4>
+                      <span
+                        className={`badge badge-${
+                          project.hasDispute
+                            ? 'danger'
+                            : project.escrowStatus === 'funded'
+                            ? 'success'
+                            : project.escrowStatus === 'released'
+                            ? 'completed'
+                            : 'primary'
+                        }`}
+                        style={{ textTransform: 'capitalize' }}
+                      >
+                        {project.hasDispute
+                          ? 'Dispute Mediation Active'
+                          : project.escrowStatus === 'funded'
+                          ? '₹ Protected Payment Held'
+                          : project.escrowStatus === 'released'
+                          ? 'Protected Payment Released'
+                          : 'Payment Not Yet Protected'}
+                      </span>
+                    </div>
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: '#475569' }}>
+                      {project.hasDispute
+                        ? 'Protected funds paused. Administrator mediation is reviewing submitted code and requirements.'
+                        : project.escrowStatus === 'funded'
+                        ? 'Your payment is protected until the project is completed and approved. Funds are released only upon client approval of GitHub code.'
+                        : project.escrowStatus === 'released'
+                        ? "Protected funds have been verified and released to developer's SkillDesk wallet."
+                        : 'Deposit contract funds into Payment Protection to guarantee safety for both parties until deliverable is approved.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  {/* Deposit Payment Protection button for client */}
+                  {isOwner && project.escrowStatus !== 'funded' && project.escrowStatus !== 'released' && !project.hasDispute && (
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        setTargetPaymentMilestone(null);
+                        setTargetPaymentAmount(project.budget);
+                        setShowPaymentModal(true);
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#16a34a', borderColor: '#16a34a' }}
+                    >
+                      <Zap size={14} /> Protect Payment (₹{Number(project.budget).toLocaleString('en-IN')})
+                    </button>
+                  )}
+
+                  {/* Approve & Release button if submitted */}
+                  {isOwner && project.status === 'submitted' && !project.hasDispute && (
+                    <button
+                      className="btn btn-success btn-sm"
+                      onClick={() => setShowApproveModal(true)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#10b981', color: '#fff', border: 'none' }}
+                    >
+                      <CheckCircle2 size={14} /> Approve & Release Funds
+                    </button>
+                  )}
+
+                  {/* Raise Dispute button if awarded */}
+                  {(isOwner || isAwardedFreelancer) && project.status !== 'open' && !project.hasDispute && (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setShowDisputeModal(true)}
+                      style={{ color: '#dc2626', borderColor: '#fca5a5', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    >
+                      <Scale size={14} /> Dispute Mediation
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Project Header & Description Card */}
               <div className="detail-card">
                 <div className="detail-header">
@@ -676,6 +832,16 @@ export default function ProjectDetail({
                         </p>
                       </div>
                     )}
+
+                    {/* Automated Code Checks Card */}
+                    {project.submission?.githubUrl && (
+                      <CodeQualityReportCard
+                        projectId={project._id}
+                        report={project.submission.codeQualityReport}
+                        githubUrl={project.submission.githubUrl}
+                        onReportUpdated={loadProjectData}
+                      />
+                    )}
                   </div>
                 ) : (
                   <div className="github-delivery-box" style={{ background: '#f8fafc', borderColor: '#e2e8f0' }}>
@@ -754,6 +920,19 @@ export default function ProjectDetail({
                   </div>
                 )
               )}
+
+              {/* Milestone-Based Contracts Section */}
+              <MilestonesSection
+                project={project}
+                isOwner={isOwner}
+                isAwardedFreelancer={isAwardedFreelancer}
+                onOpenDepositEscrow={(m) => {
+                  setTargetPaymentMilestone(m);
+                  setTargetPaymentAmount(m.amount);
+                  setShowPaymentModal(true);
+                }}
+                onMilestoneUpdated={loadProjectData}
+              />
 
               {/* 2. If Project is In Progress & User is the Chosen Freelancer -> Deliverable Submission Form */}
               {isAwardedFreelancer && project.status === 'in_progress' && (
@@ -1444,6 +1623,7 @@ export default function ProjectDetail({
               <textarea
                 rows={3}
                 className="form-textarea"
+                placeholder="Leave an honest review for the freelancer's deliverable..."
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
               />
@@ -1469,6 +1649,36 @@ export default function ProjectDetail({
           </div>
         </div>
       )}
+
+      {/* SKILLDESK PAYMENT PROTECTION MODAL */}
+      <PaymentProtectionModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setTargetPaymentMilestone(null);
+        }}
+        project={project}
+        milestone={targetPaymentMilestone}
+        amount={targetPaymentAmount}
+        onPaymentSuccess={() => {
+          setSuccessMessage('Payment is now protected! Funds are held until work is approved.');
+          loadProjectData();
+          if (onProjectUpdated) onProjectUpdated();
+        }}
+      />
+
+      {/* DISPUTE MEDIATION MODAL */}
+      <DisputeModal
+        isOpen={showDisputeModal}
+        onClose={() => setShowDisputeModal(false)}
+        project={project}
+        onDisputeRaised={(newDispute) => {
+          setActiveDisputeData(newDispute);
+          setSuccessMessage('Dispute opened. Protected payment paused for administrator mediation.');
+          loadProjectData();
+          if (onProjectUpdated) onProjectUpdated();
+        }}
+      />
     </div>
   );
 }

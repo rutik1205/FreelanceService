@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   const primaryUri = process.env.MONGODB_URI || process.env.ATLAS_MONGODB_URI || 'mongodb://127.0.0.1:27017/skilldesk';
-  const fallbackAtlasUri = 'mongodb+srv://rtikagayakavada4_db_user:5p4djjR5tw60Hvnz@skilldesk.a6zpfns.mongodb.net/skilldesk?retryWrites=true&w=majority&appName=SkillDesk';
+  const fallbackAtlasUri = process.env.MONGODB_URI || process.env.ATLAS_MONGODB_URI || '';
   const fallbackUri = 'mongodb://127.0.0.1:27017/skilldesk';
 
   try {

@@ -27,6 +27,8 @@ export default function Dashboard({
   const [clientProjects, setClientProjects] = useState([]);
   const [freelancerProjects, setFreelancerProjects] = useState([]);
   const [myBids, setMyBids] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [walletBalance, setWalletBalance] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = async () => {
@@ -56,6 +58,16 @@ export default function Dashboard({
       });
       const bData = await bRes.json();
       if (bData.success) setMyBids(bData.bids || []);
+
+      // 4. Fetch Escrow & Financial Ledger
+      const tRes = await fetch(apiUrl('/api/payments/my-transactions'), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const tData = await tRes.json();
+      if (tData.success) {
+        setTransactions(tData.transactions || []);
+        setWalletBalance(tData.walletBalance || 0);
+      }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -136,7 +148,30 @@ export default function Dashboard({
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Wallet Balance Display */}
+          <div
+            style={{
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '10px',
+              padding: '0.5rem 1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <IndianRupee size={20} color="#16a34a" />
+            <div>
+              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>
+                Wallet Balance
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#14532d', lineHeight: 1.1 }}>
+                ₹{Number(walletBalance).toLocaleString('en-IN')}
+              </div>
+            </div>
+          </div>
+
           <button className="btn btn-secondary btn-sm" onClick={onOpenProfile}>
             Edit Profile
           </button>
@@ -158,7 +193,7 @@ export default function Dashboard({
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {/* Only show "My Posted Projects" tab if user is a client */}
         {isClient && (
           <button
@@ -218,8 +253,28 @@ export default function Dashboard({
             gap: '0.4rem',
           }}
         >
-          <Clock size={16} />
+          <Layers size={16} />
           <span>My Submitted Proposals ({myBids.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('transactions')}
+          style={{
+            padding: '0.75rem 1.25rem',
+            border: 'none',
+            background: 'transparent',
+            fontWeight: 700,
+            fontSize: '0.92rem',
+            color: activeTab === 'transactions' ? 'var(--primary)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'transactions' ? '2px solid var(--primary)' : '2px solid transparent',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+          }}
+        >
+          <IndianRupee size={16} />
+          <span>Protected Payments & Transactions ({transactions.length})</span>
         </button>
       </div>
 
@@ -469,6 +524,74 @@ export default function Dashboard({
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 4. Escrow & Financial Ledger Tab */}
+          {activeTab === 'transactions' && (
+            <div>
+              {transactions.length === 0 ? (
+                <div
+                  style={{
+                    background: '#ffffff',
+                    border: '1px dashed #cbd5e1',
+                    borderRadius: 'var(--radius-xl)',
+                    padding: '3rem 2rem',
+                    textAlign: 'center',
+                  }}
+                >
+                  <IndianRupee size={36} color="var(--primary)" style={{ margin: '0 auto 0.75rem' }} />
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.4rem' }}>
+                    No Protected Transactions Yet
+                  </h3>
+                  <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+                    When you deposit or receive milestone and project protected payments, your ledger will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.5rem', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#64748b' }}>
+                        <th style={{ padding: '0.75rem 1rem' }}>Project / Item</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Payer (Client)</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Payee (Freelancer)</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Amount (₹ INR)</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Protection Status</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {transactions.map((tx) => (
+                        <tr key={tx._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '0.85rem 1rem' }}>
+                            <div
+                              style={{ fontWeight: 700, color: '#4f46e5', cursor: 'pointer' }}
+                              onClick={() => tx.project?._id && onSelectProject(tx.project._id)}
+                            >
+                              {tx.project?.title || 'Project'}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{tx.protectionNote || tx.escrowNote || 'SkillDesk Protected Payment'}</div>
+                          </td>
+                          <td style={{ padding: '0.85rem 1rem' }}>{tx.payer?.name || 'Client'}</td>
+                          <td style={{ padding: '0.85rem 1rem' }}>{tx.payee?.name || 'Freelancer'}</td>
+                          <td style={{ padding: '0.85rem 1rem', fontWeight: 800, color: '#0f172a' }}>
+                            ₹{Number(tx.amount).toLocaleString('en-IN')}
+                          </td>
+                          <td style={{ padding: '0.85rem 1rem' }}>
+                            <span className={`badge badge-${tx.status === 'released' ? 'success' : tx.status === 'held_in_escrow' ? 'primary' : 'secondary'}`}>
+                              {tx.status === 'held_in_escrow' ? 'Protected' : tx.status === 'released' ? 'Released' : tx.status.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td style={{ padding: '0.85rem 1rem', color: '#64748b', fontSize: '0.8rem' }}>
+                            {new Date(tx.createdAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

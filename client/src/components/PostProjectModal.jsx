@@ -15,6 +15,11 @@ export default function PostProjectModal({ isOpen, onClose, onProjectCreated, on
   const [skillsString, setSkillsString] = useState('React, Node.js, MongoDB');
   const [description, setDescription] = useState('');
   const [attachment, setAttachment] = useState(null);
+  const [isMilestoneBased, setIsMilestoneBased] = useState(false);
+  const [milestonesList, setMilestonesList] = useState([
+    { title: 'Milestone 1: Backend APIs & Auth', amount: '10000' },
+    { title: 'Milestone 2: Frontend & Deployment', amount: '15000' },
+  ]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -101,6 +106,8 @@ export default function PostProjectModal({ isOpen, onClose, onProjectCreated, on
           skillsRequired: skillsArray,
           description: description.trim(),
           attachments,
+          isMilestoneBased,
+          milestones: isMilestoneBased ? milestonesList : [],
         }),
       });
 
@@ -355,6 +362,141 @@ export default function PostProjectModal({ isOpen, onClose, onProjectCreated, on
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          {/* Milestone-Based Contract Toggle */}
+          <div
+            style={{
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '10px',
+              padding: '1rem',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>
+                  Milestone-Based Contract
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                  Split this project into multiple paid deliverables with independent Payment Protection releases
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={isMilestoneBased}
+                onChange={(e) => setIsMilestoneBased(e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+              />
+            </div>
+
+            {isMilestoneBased && (
+              <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  {milestonesList.map((m, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        gap: '0.5rem',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={m.title}
+                        onChange={(e) => {
+                          const updated = [...milestonesList];
+                          updated[idx].title = e.target.value;
+                          setMilestonesList(updated);
+                        }}
+                        placeholder={`Milestone ${idx + 1} Title`}
+                        style={{
+                          flex: 2,
+                          padding: '0.45rem 0.6rem',
+                          borderRadius: '6px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.85rem',
+                        }}
+                      />
+                      <div style={{ position: 'relative', flex: 1 }}>
+                        <span
+                          style={{
+                            position: 'absolute',
+                            left: '8px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            fontSize: '0.8rem',
+                            color: '#64748b',
+                          }}
+                        >
+                          ₹
+                        </span>
+                        <input
+                          type="number"
+                          value={m.amount}
+                          onChange={(e) => {
+                            const updated = [...milestonesList];
+                            updated[idx].amount = e.target.value;
+                            setMilestonesList(updated);
+                          }}
+                          placeholder="Amount"
+                          style={{
+                            width: '100%',
+                            padding: '0.45rem 0.6rem 0.45rem 1.4rem',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '0.85rem',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                      {milestonesList.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setMilestonesList(milestonesList.filter((_, i) => i !== idx))}
+                          style={{
+                            background: '#fee2e2',
+                            color: '#ef4444',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '0.45rem 0.6rem',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setMilestonesList([
+                      ...milestonesList,
+                      { title: `Milestone ${milestonesList.length + 1}`, amount: '5000' },
+                    ])
+                  }
+                  style={{
+                    background: '#e0e7ff',
+                    color: '#4338ca',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.4rem 0.75rem',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  + Add Another Milestone
+                </button>
+              </div>
+            )}
           </div>
 
           {/* ImageKit Attachment */}

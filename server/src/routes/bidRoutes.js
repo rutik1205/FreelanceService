@@ -80,6 +80,21 @@ router.post(['/projects/:projectId/bids', '/projects/:projectId'], protect, asyn
 
     const populatedBid = await Bid.findById(bid._id).populate('freelancer', 'name email avatar headline ratingsAverage githubUrl');
 
+    // Notify project client
+    const { sendNotification } = require('../services/notificationService');
+    const io = req.app.get('io');
+    await sendNotification({
+      recipient: project.client,
+      sender: req.user._id,
+      type: 'bid_received',
+      title: 'New Bid Received 🎯',
+      message: `${req.user.name} submitted a bid of ₹${Number(amount).toLocaleString('en-IN')} on "${project.title}".`,
+      link: `/project/${project._id}`,
+      projectId: project._id,
+      meta: { bidId: bid._id, amount: Number(amount) },
+      io,
+    });
+
     res.status(201).json({
       success: true,
       bid: populatedBid,

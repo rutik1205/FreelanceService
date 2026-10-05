@@ -10,6 +10,11 @@ const projectRoutes = require('./routes/projectRoutes');
 const bidRoutes = require('./routes/bidRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const disputeRoutes = require('./routes/disputeRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -28,6 +33,14 @@ app.set('io', io);
 // Socket connection handling
 io.on('connection', (socket) => {
   console.log(`🔌 Client connected to Socket.IO: ${socket.id}`);
+
+  // User-specific notification room
+  socket.on('joinUser', (userId) => {
+    if (userId) {
+      socket.join(`user_${userId.toString()}`);
+      console.log(`Socket ${socket.id} joined personal room: user_${userId}`);
+    }
+  });
 
   socket.on('joinProject', (projectId) => {
     socket.join(projectId.toString());
@@ -51,7 +64,7 @@ connectDB();
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-demo'],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -70,6 +83,11 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/bids', bidRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/disputes', disputeRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

@@ -75,6 +75,58 @@ const projectSchema = new mongoose.Schema(
     awardedAt: {
       type: Date,
     },
+    // Escrow integration
+    escrowPayment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Payment',
+      default: null,
+    },
+    escrowStatus: {
+      type: String,
+      enum: ['unfunded', 'funded', 'released', 'refunded', 'disputed'],
+      default: 'unfunded',
+    },
+    // Milestone-based contracts
+    isMilestoneBased: {
+      type: Boolean,
+      default: false,
+    },
+    milestones: [
+      {
+        title: { type: String, required: true },
+        description: { type: String, default: '' },
+        amount: { type: Number, required: true },
+        dueDate: { type: Date },
+        status: {
+          type: String,
+          enum: ['pending', 'funded', 'in_progress', 'submitted', 'approved', 'disputed'],
+          default: 'pending',
+        },
+        escrowPayment: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Payment',
+          default: null,
+        },
+        submission: {
+          githubUrl: { type: String, default: '', trim: true },
+          liveDemoUrl: { type: String, default: '', trim: true },
+          notes: { type: String, default: '' },
+          submittedAt: { type: Date },
+          codeQualityReport: { type: mongoose.Schema.Types.Mixed, default: null },
+        },
+        approvedAt: { type: Date },
+      },
+    ],
+    // Dispute state
+    hasDispute: {
+      type: Boolean,
+      default: false,
+    },
+    activeDispute: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Dispute',
+      default: null,
+    },
     // Deliverable submission from freelancer (specifically GitHub repository link)
     submission: {
       githubUrl: {
@@ -93,6 +145,10 @@ const projectSchema = new mongoose.Schema(
       },
       submittedAt: {
         type: Date,
+      },
+      codeQualityReport: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
       },
       attachments: [
         {

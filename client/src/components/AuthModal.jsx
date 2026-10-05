@@ -12,7 +12,34 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Clear credentials whenever modal opens or initialMode changes
+  React.useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      setEmail('');
+      setPassword('');
+      setName('');
+      setError('');
+    }
+  }, [isOpen, initialMode]);
+
   if (!isOpen) return null;
+
+  const handleClose = () => {
+    setEmail('');
+    setPassword('');
+    setName('');
+    setError('');
+    onClose();
+  };
+
+  const switchMode = (newMode) => {
+    setMode(newMode);
+    setEmail('');
+    setPassword('');
+    setName('');
+    setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,8 +52,15 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       } else {
         await register({ name, email, password, role });
       }
+      // Never retain credentials in state after successful submission
+      setEmail('');
+      setPassword('');
+      setName('');
+      setError('');
       onClose();
     } catch (err) {
+      // Clear password field on failed attempt for security
+      setPassword('');
       setError(err.message || 'Authentication failed');
     } finally {
       setLoading(false);
@@ -34,7 +68,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleClose}>
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
@@ -50,7 +84,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               background: '#f1f5f9',
               border: 'none',
@@ -71,10 +105,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
         <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
           <button
             type="button"
-            onClick={() => {
-              setMode('login');
-              setError('');
-            }}
+            onClick={() => switchMode('login')}
             style={{
               flex: 1,
               padding: '0.7rem 0',
@@ -92,10 +123,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           </button>
           <button
             type="button"
-            onClick={() => {
-              setMode('register');
-              setError('');
-            }}
+            onClick={() => switchMode('register')}
             style={{
               flex: 1,
               padding: '0.7rem 0',
@@ -134,7 +162,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="off">
           {mode === 'register' && (
             <>
               {/* Role Picker */}
@@ -193,7 +221,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 <label className="form-label">Full Name</label>
                 <input
                   type="text"
+                  name="user_fullname"
+                  id="user_fullname"
                   required
+                  autoComplete="name"
                   placeholder="e.g. Rahul Sharma"
                   className="form-input"
                   value={name}
@@ -207,7 +238,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
             <label className="form-label">Email Address</label>
             <input
               type="email"
+              name="user_email"
+              id="user_email"
               required
+              autoComplete="off"
               placeholder="name@example.com"
               className="form-input"
               value={email}
@@ -219,7 +253,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
             <label className="form-label">Password</label>
             <input
               type="password"
+              name="user_password"
+              id="user_password"
               required
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               placeholder="Minimum 6 characters"
               className="form-input"
               value={password}

@@ -10,6 +10,7 @@ import ProfileModal from './components/ProfileModal';
 import HowItWorksModal from './components/HowItWorksModal';
 import Dashboard from './components/Dashboard';
 import FreelancersDirectory from './components/FreelancersDirectory';
+import AdminDashboard from './components/AdminDashboard';
 import { useAuth } from './context/AuthContext';
 import {
   Briefcase,
@@ -119,6 +120,7 @@ export default function App() {
         onOpenAuth={handleOpenAuth}
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
+        onSelectProject={handleSelectProject}
       />
 
       {/* Main Content Area */}
@@ -308,6 +310,11 @@ export default function App() {
         {currentView === 'freelancers' && (
           <FreelancersDirectory onOpenAuth={handleOpenAuth} />
         )}
+
+        {/* VIEW 5: Admin Dashboard & Dispute Resolution */}
+        {currentView === 'admin' && (
+          <AdminDashboard onSelectProject={handleSelectProject} />
+        )}
       </main>
 
       {/* Footer */}
@@ -376,6 +383,7 @@ export default function App() {
       />
 
       <AuthModal
+        key={isAuthOpen ? `auth-modal-${authMode}-${Date.now()}` : 'auth-modal-closed'}
         isOpen={isAuthOpen}
         initialMode={authMode}
         onClose={() => setIsAuthOpen(false)}

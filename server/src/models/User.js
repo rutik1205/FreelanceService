@@ -25,8 +25,24 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['client', 'freelancer', 'both'],
+      enum: ['client', 'freelancer', 'both', 'admin'],
       default: 'freelancer',
+    },
+    isBanned: {
+      type: Boolean,
+      default: false,
+    },
+    banReason: {
+      type: String,
+      default: '',
+    },
+    walletBalance: {
+      type: Number,
+      default: 0,
+    },
+    escrowBalance: {
+      type: Number,
+      default: 0,
     },
     avatar: {
       type: String,
@@ -63,13 +79,14 @@ const userSchema = new mongoose.Schema(
     },
     ratingsAverage: {
       type: Number,
-      default: 5.0,
-      min: 1,
+      default: 0,
+      min: 0,
       max: 5,
     },
     ratingsCount: {
       type: Number,
       default: 0,
+      min: 0,
     },
     completedProjectsCount: {
       type: Number,

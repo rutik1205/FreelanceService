@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Review = require('../models/Review');
 const { protect } = require('../middleware/auth');
 
 const signToken = (id) => {
@@ -180,10 +181,37 @@ router.get('/freelancers', async (req, res) => {
       ];
     }
 
-    const freelancers = await User.find(filter)
+    const rawFreelancers = await User.find(filter)
       .select('-email -password')
       .sort({ ratingsAverage: -1, completedProjectsCount: -1 })
-      .limit(30);
+      .limit(30)
+      .lean();
+
+    const freelancerIds = rawFreelancers.map((f) => f._id);
+    const allReviews = await Review.find({ freelancer: { $in: freelancerIds } })
+      .populate('client', 'name avatar')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const reviewsMap = {};
+    for (const r of allReviews) {
+      const fid = r.freelancer.toString();
+      if (!reviewsMap[fid]) reviewsMap[fid] = [];
+      reviewsMap[fid].push(r);
+    }
+
+    const freelancers = rawFreelancers.map((f) => {
+      const devReviews = reviewsMap[f._id.toString()] || [];
+      const totalStars = devReviews.reduce((sum, rev) => sum + rev.rating, 0);
+      const computedAvg = devReviews.length > 0 ? Number((totalStars / devReviews.length).toFixed(1)) : 0;
+
+      return {
+        ...f,
+        reviews: devReviews,
+        ratingsCount: devReviews.length,
+        ratingsAverage: computedAvg,
+      };
+    });
 
     res.json({
       success: true,

@@ -96,6 +96,21 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   };
 
+  const refetchUser = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(apiUrl('/api/auth/me'), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        setUser(data.user);
+      }
+    } catch (err) {
+      console.error('Failed to refetch user:', err);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -106,9 +121,11 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         updateProfile,
+        refetchUser,
         isAuthenticated: !!user,
         isClient: user?.role === 'client' || user?.role === 'both',
-        isFreelancer: user?.role === 'freelancer',
+        isFreelancer: user?.role === 'freelancer' || user?.role === 'both',
+        isAdmin: user?.role === 'admin',
       }}
     >
       {children}

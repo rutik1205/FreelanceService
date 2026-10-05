@@ -10,8 +10,10 @@ import {
   Layers,
   GitBranch,
   Search,
+  Scale,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import NotificationCenter from './NotificationCenter';
 
 export default function Navbar({
   currentView,
@@ -20,6 +22,7 @@ export default function Navbar({
   onOpenAuth,
   onOpenHowItWorks,
   onOpenProfile,
+  onSelectProject,
 }) {
   const { user, logout, isClient, isFreelancer } = useAuth();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -70,6 +73,15 @@ export default function Navbar({
               <Layers size={16} /> My Dashboard
             </button>
           )}
+          {user && (
+            <button
+              className={`nav-link ${currentView === 'admin' ? 'active' : ''}`}
+              onClick={() => setCurrentView('admin')}
+              style={{ color: currentView === 'admin' ? 'var(--primary)' : '#475569' }}
+            >
+              <Scale size={16} /> Admin Portal
+            </button>
+          )}
           <button className="nav-link" onClick={onOpenHowItWorks}>
             <HelpCircle size={16} /> How It Works
           </button>
@@ -92,6 +104,16 @@ export default function Navbar({
             >
               <Search size={15} /> Find Projects
             </button>
+          )}
+
+          {/* Notifications Alert Center */}
+          {user && (
+            <NotificationCenter
+              onSelectProject={(projectId) => {
+                if (onSelectProject) onSelectProject(projectId);
+                else setCurrentView('detail');
+              }}
+            />
           )}
 
           {/* User Account / Auth Buttons */}
@@ -157,6 +179,19 @@ export default function Navbar({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Layers size={15} color="#059669" />
                       <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>My Dashboard</span>
+                    </div>
+                  </button>
+
+                  <button
+                    className="demo-item"
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      setCurrentView('admin');
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Scale size={15} color="#4f46e5" />
+                      <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>Admin Portal</span>
                     </div>
                   </button>
 
